@@ -1,0 +1,109 @@
+import sqlite3
+
+
+def main():
+    connect = sqlite3.connect('user_profile.db')
+    cursor = connect.cursor()
+    while True:
+        try:
+            name = str(input("input name "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+
+    while True:
+        try:
+            age = int(input("input age "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+
+    while True:
+        try:
+            retirement_age = int(input("input retirement age "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+    while True:
+        try:
+            retirement_goal = int(input("input money goal for retirement "))
+            if retirement_goal < 0:
+                raise ValueError("Invalid retirement goal. Please enter a positive number.")
+            break
+        except ValueError as e:
+            print(f"Invalid input. {e}")
+            return
+
+    while True:
+        try:
+            annual_income = int(input("input annual income "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+        
+    while True:
+        try:
+            annual_expenses = int(input("input annual expenses "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+
+    while True:
+        try:
+            interested_sectors = str(input("input interested sectors "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+        
+    while True:
+        try:
+            risk_tolerance = int(input("input risk tolerance 1-10"))
+            if risk_tolerance not in range(1, 11):
+                raise ValueError("Invalid risk tolerance value. Please enter a number between 1 and 10.")
+            break
+        except ValueError as e:
+            print(f"Invalid input. {e}")
+            return
+        except ValueError as e:
+            print(f"Invalid input. {e}")
+            return
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS user_profile_table (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        age INTEGER,
+        retirement_age INTEGER,
+        retirement_goal INTEGER,
+        risk_tolerance TEXT,
+        annual_income INTEGER,
+        annual_expenses INTEGER,
+        interested_sectors TEXT
+    )
+    ''')
+
+    connect.commit()
+
+    cursor.execute('''
+        INSERT INTO user_profile_table (name, age, retirement_age, retirement_goal, risk_tolerance, annual_income, annual_expenses, interested_sectors)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, age, retirement_age, retirement_goal, risk_tolerance, annual_income, annual_expenses, interested_sectors))
+
+    connect.commit()
+
+    cursor.execute("SELECT * FROM user_profile_table")
+    profiles = cursor.fetchall()
+
+    for profile in profiles:
+        print(profile)
+
+    connect.close()
+
+if __name__ == '__main__':
+    main()
