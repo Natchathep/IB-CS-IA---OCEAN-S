@@ -4,6 +4,8 @@ import sqlite3
 def main():
     connect = sqlite3.connect('user_profile.db')
     cursor = connect.cursor()
+
+# General Information
     while True:
         try:
             name = str(input("input name "))
@@ -27,16 +29,8 @@ def main():
         except ValueError:
             print("Invalid input. Please enter valid values.")
             return
-    while True:
-        try:
-            retirement_goal = int(input("input money goal for retirement "))
-            if retirement_goal < 0:
-                raise ValueError("Invalid retirement goal. Please enter a positive number.")
-            break
-        except ValueError as e:
-            print(f"Invalid input. {e}")
-            return
-
+        
+# Personal Finances 
     while True:
         try:
             annual_income = int(input("input annual income "))
@@ -53,14 +47,16 @@ def main():
             print("Invalid input. Please enter valid values.")
             return
 
+# Investment Preferences
     while True:
         try:
             interested_sectors = str(input("input interested sectors "))
             break
         except ValueError:
             print("Invalid input. Please enter valid values.")
+
             return
-        
+
     while True:
         try:
             risk_tolerance = int(input("input risk tolerance 1-10"))
@@ -73,6 +69,15 @@ def main():
         except ValueError as e:
             print(f"Invalid input. {e}")
             return
+        
+# Financial Goals
+    while True:
+        try:
+            money_by_retirement = int(input("input how much money you want by retirement "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS user_profile_table (
@@ -80,20 +85,20 @@ def main():
         name TEXT,
         age INTEGER,
         retirement_age INTEGER,
-        retirement_goal INTEGER,
-        risk_tolerance TEXT,
         annual_income INTEGER,
         annual_expenses INTEGER,
-        interested_sectors TEXT
+        interested_sectors TEXT,
+        risk_tolerance TEXT,
+        money_by_retirement INTEGER
     )
     ''')
 
     connect.commit()
 
     cursor.execute('''
-        INSERT INTO user_profile_table (name, age, retirement_age, retirement_goal, risk_tolerance, annual_income, annual_expenses, interested_sectors)
+        INSERT INTO user_profile_table (name, age, retirement_age, annual_income, annual_expenses, interested_sectors, risk_tolerance, money_by_retirement)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, age, retirement_age, retirement_goal, risk_tolerance, annual_income, annual_expenses, interested_sectors))
+    ''', (name, age, retirement_age, annual_income, annual_expenses, interested_sectors, risk_tolerance, money_by_retirement))
 
     connect.commit()
 
@@ -107,3 +112,50 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Risk Algo
+def risk_algorithm(risk_tolerance):
+    if risk_tolerance <= 3:
+        return "Low Risk"
+    elif 4 <= risk_tolerance <= 7:
+        return "Medium Risk"
+    elif risk_tolerance >= 8:
+        return "High Risk"
+
+# Tax Algo
+def tax(annual_income):
+    
+    bracket_1 = 150000
+    bracket_2 = 150000
+    bracket_3 = 200000
+    bracket_4 = 250000
+    bracket_5 = 250000
+    bracket_6 = 1000000
+    bracket_7 = 3000000
+    bracket_8 = 5000000
+
+    if annual_income <= bracket_1:
+        tax = annual_income * 0.00
+    elif annual_income <= bracket_2:
+        tax = bracket_1 * 0.00 + (annual_income - bracket_1) * 0.05
+    elif annual_income <= bracket_3:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (annual_income - bracket_2) * 0.10
+    elif annual_income <= bracket_4:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (annual_income - bracket_3) * 0.15
+    elif annual_income <= bracket_5:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (annual_income - bracket_4) * 0.20
+    elif annual_income <= bracket_6:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (annual_income - bracket_5) * 0.25
+    elif annual_income <= bracket_7:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (bracket_6 - bracket_5) * 0.25 + (annual_income - bracket_6) * 0.30
+    elif annual_income <= bracket_8:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (bracket_6 - bracket_5) * 0.25 + (bracket_7 - bracket_6) * 0.30 + (annual_income - bracket_7) * 0.30
+    else:
+        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (bracket_6 - bracket_5) * 0.25 + (bracket_7 - bracket_6) * 0.30 + (bracket_8 - bracket_7) * 0.35 + (annual_income - bracket_8)
+    return tax
+
+# Inflation Adjustments
+def inflation_adjustment(annual_income, money_by_retirement, age, retirement_age, inflation_rate, base_cpi, current_cpi):
+    real_income = annual_income * (base_cpi / current_cpi)
+    money_needed_today = money_by_retirement / (1+inflation_rate) ** (retirement_age - age)
+    return real_income, money_needed_today
