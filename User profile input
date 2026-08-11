@@ -1,11 +1,35 @@
 import sqlite3
 
 
-def main():
+def create_database():
     connect = sqlite3.connect('user_profile.db')
     cursor = connect.cursor()
 
+    
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS user_profile_table (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        spouse_status TEXT,
+        parental_status TEXT,
+        age INTEGER,
+        retirement_age INTEGER,
+        relationship TEXT,
+        main_profile_id INTEGER,
+        annual_income INTEGER,
+        annual_expenses INTEGER,
+        current_assets INTEGER,
+        interested_sectors TEXT,
+        risk_tolerance INTEGER,
+        money_by_retirement INTEGER
+    )
+    ''')
+
+    connect.commit()
+    return connect, cursor
+
 # General Information
+def user_input():
     while True:
         try:
             name = str(input("input name "))
@@ -13,7 +37,27 @@ def main():
         except ValueError:
             print("Invalid input. Please enter valid values.")
             return
-
+        
+    while True:
+        try:
+            spouse_status = str(input("input status: single, married, divorced "))
+            if spouse_status not in ["single", "married", "divorced"]:
+                raise ValueError("Invalid status. Please enter one of the following: single, married, divorced")
+            break
+        except ValueError:
+            print(f"Invalid input. Please enter valid values.")
+            return
+        
+    while True:
+        try:
+            parental_status = str(input("input status: parent, non-parent "))
+            if parental_status not in ["parent", "non-parent"]:
+                raise ValueError("Invalid status. Please enter one of the following: parent, non-parent")
+            break
+        except ValueError:
+            print(f"Invalid input. Please enter valid values.")
+            return
+        
     while True:
         try:
             age = int(input("input age "))
@@ -29,7 +73,7 @@ def main():
         except ValueError:
             print("Invalid input. Please enter valid values.")
             return
-        
+         
 # Personal Finances 
     while True:
         try:
@@ -47,6 +91,14 @@ def main():
             print("Invalid input. Please enter valid values.")
             return
 
+    while True:
+        try:
+            current_assets = int(input("input current assets "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+
 # Investment Preferences
     while True:
         try:
@@ -59,7 +111,7 @@ def main():
 
     while True:
         try:
-            risk_tolerance = int(input("input risk tolerance 1-10"))
+            risk_tolerance = int(input("input risk tolerance 1-10 "))
             if risk_tolerance not in range(1, 11):
                 raise ValueError("Invalid risk tolerance value. Please enter a number between 1 and 10.")
             break
@@ -78,27 +130,35 @@ def main():
         except ValueError:
             print("Invalid input. Please enter valid values.")
             return
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS user_profile_table (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        age INTEGER,
-        retirement_age INTEGER,
-        annual_income INTEGER,
-        annual_expenses INTEGER,
-        interested_sectors TEXT,
-        risk_tolerance TEXT,
-        money_by_retirement INTEGER
+        
+    return (
+        name, age, retirement_age, annual_income,
+        annual_expenses, current_assets, interested_sectors,
+        risk_tolerance, money_by_retirement,
+        spouse_status, parental_status
     )
-    ''')
 
-    connect.commit()
-
-    cursor.execute('''
-        INSERT INTO user_profile_table (name, age, retirement_age, annual_income, annual_expenses, interested_sectors, risk_tolerance, money_by_retirement)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, age, retirement_age, annual_income, annual_expenses, interested_sectors, risk_tolerance, money_by_retirement))
+def create_user_profile(
+    cursor, connect, relationship, main_profile_id,
+    name, age, retirement_age, annual_income,
+    annual_expenses, current_assets, interested_sectors,
+    risk_tolerance, money_by_retirement,
+    spouse_status, parental_status
+):
+    cursor.execute("""
+    INSERT INTO user_profile_table (
+        name, spouse_status, parental_status, age, retirement_age,
+        relationship, main_profile_id,
+        annual_income, annual_expenses, current_assets,
+        interested_sectors, risk_tolerance, money_by_retirement
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+""", (
+    name, spouse_status, parental_status, age, retirement_age,
+    relationship, main_profile_id,
+    annual_income, annual_expenses, current_assets,
+    interested_sectors, risk_tolerance, money_by_retirement
+))
 
     connect.commit()
 
@@ -108,11 +168,36 @@ def main():
     for profile in profiles:
         print(profile)
 
+#test
+'''''
+def get_profiles(cursor):
+    cursor.execute("SELECT * FROM user_profile_table")
+    profiles = cursor.fetchall()
+
+    for profile in profiles:
+        print(profile)
+
+def main():
+    connect, cursor = create_database()
+    get_profiles(cursor)
+    connect.close()'''
+
+def main():
+    connect, cursor = create_database()
+
+    profile_data = user_input()
+
+    if profile_data is not None:
+        create_user_profile(
+            cursor, connect, "Main User", None, *profile_data
+        )
+
     connect.close()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 
+'''
 # Risk Algo
 def risk_algorithm(risk_tolerance):
     if risk_tolerance <= 3:
@@ -159,3 +244,4 @@ def inflation_adjustment(annual_income, money_by_retirement, age, retirement_age
     real_income = annual_income * (base_cpi / current_cpi)
     money_needed_today = money_by_retirement / (1+inflation_rate) ** (retirement_age - age)
     return real_income, money_needed_today
+'''
