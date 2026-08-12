@@ -1,3 +1,4 @@
+import profile
 import sqlite3
 
 
@@ -168,36 +169,7 @@ def create_user_profile(
     for profile in profiles:
         print(profile)
 
-#test
-'''''
-def get_profiles(cursor):
-    cursor.execute("SELECT * FROM user_profile_table")
-    profiles = cursor.fetchall()
 
-    for profile in profiles:
-        print(profile)
-
-def main():
-    connect, cursor = create_database()
-    get_profiles(cursor)
-    connect.close()'''
-
-def main():
-    connect, cursor = create_database()
-
-    profile_data = user_input()
-
-    if profile_data is not None:
-        create_user_profile(
-            cursor, connect, "Main User", None, *profile_data
-        )
-
-    connect.close()
-
-if __name__ == "__main__":
-    main()
-
-'''
 # Risk Algo
 def risk_algorithm(risk_tolerance):
     if risk_tolerance <= 3:
@@ -207,41 +179,105 @@ def risk_algorithm(risk_tolerance):
     elif risk_tolerance >= 8:
         return "High Risk"
 
-# Tax Algo
+# Calulate algo
 def tax(annual_income):
-    
-    bracket_1 = 150000
-    bracket_2 = 150000
-    bracket_3 = 200000
-    bracket_4 = 250000
-    bracket_5 = 250000
-    bracket_6 = 1000000
-    bracket_7 = 3000000
-    bracket_8 = 5000000
+    if annual_income <= 150000:
+        return 0
 
-    if annual_income <= bracket_1:
-        tax = annual_income * 0.00
-    elif annual_income <= bracket_2:
-        tax = bracket_1 * 0.00 + (annual_income - bracket_1) * 0.05
-    elif annual_income <= bracket_3:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (annual_income - bracket_2) * 0.10
-    elif annual_income <= bracket_4:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (annual_income - bracket_3) * 0.15
-    elif annual_income <= bracket_5:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (annual_income - bracket_4) * 0.20
-    elif annual_income <= bracket_6:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (annual_income - bracket_5) * 0.25
-    elif annual_income <= bracket_7:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (bracket_6 - bracket_5) * 0.25 + (annual_income - bracket_6) * 0.30
-    elif annual_income <= bracket_8:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (bracket_6 - bracket_5) * 0.25 + (bracket_7 - bracket_6) * 0.30 + (annual_income - bracket_7) * 0.30
+    elif annual_income <= 300000:
+        return (annual_income - 150000) * 0.05
+
+    elif annual_income <= 500000:
+        return 7500 + (annual_income - 300000) * 0.10
+
+    elif annual_income <= 750000:
+        return 27500 + (annual_income - 500000) * 0.15
+
+    elif annual_income <= 1000000:
+        return 65000 + (annual_income - 750000) * 0.20
+
+    elif annual_income <= 2000000:
+        return 115000 + (annual_income - 1000000) * 0.25
+
+    elif annual_income <= 5000000:
+        return 365000 + (annual_income - 2000000) * 0.30
     else:
-        tax = bracket_1 * 0.00 + (bracket_2 - bracket_1) * 0.05 + (bracket_3 - bracket_2) * 0.10 + (bracket_4 - bracket_3) * 0.15 + (bracket_5 - bracket_4) * 0.20 + (bracket_6 - bracket_5) * 0.25 + (bracket_7 - bracket_6) * 0.30 + (bracket_8 - bracket_7) * 0.35 + (annual_income - bracket_8)
-    return tax
+        return 1265000 + (annual_income - 5000000) * 0.35
 
-# Inflation Adjustments
-def inflation_adjustment(annual_income, money_by_retirement, age, retirement_age, inflation_rate, base_cpi, current_cpi):
-    real_income = annual_income * (base_cpi / current_cpi)
-    money_needed_today = money_by_retirement / (1+inflation_rate) ** (retirement_age - age)
-    return real_income, money_needed_today
-'''
+def inflation_adjustment(money_by_retirement, age, retirement_age, inflation_rate):
+    year_till_retirement = retirement_age - age
+    real_goal = money_by_retirement * ((1 + inflation_rate) ** year_till_retirement)
+    return real_goal
+
+def required_monthly_savings(adjusted_goal, current_assets, age, retirement_age):
+    years_till_retirement = retirement_age - age
+    months_till_retirement = years_till_retirement * 12
+
+    remaining_amount = adjusted_goal - current_assets
+
+    if remaining_amount <= 0:
+        return 0, remaining_amount, months_till_retirement
+
+    monthly_savings_needed = remaining_amount / months_till_retirement
+
+    return monthly_savings_needed, remaining_amount, months_till_retirement
+
+def progress(annual_income, annual_expenses, required_monthly_savings):
+    annual_tax = tax(annual_income)
+    income_after_tax = annual_income - annual_tax
+    annual_savings = income_after_tax - annual_expenses
+    monthly_savings = annual_savings / 12
+    progress_amount = monthly_savings - required_monthly_savings
+
+    if progress_amount < 0:
+        print(f"You are below the required savings per month by {abs(progress_amount)}")
+    elif progress_amount > 0:
+        print(f"You are above the required savings per month by {progress_amount}")
+    else:
+        print("You are exactly on track with the required savings per month.")
+
+def get_user_profile(cursor, user_id):
+    cursor.execute("SELECT * FROM user_profile_table WHERE id = ?", (user_id,))
+    profile = cursor.fetchone()
+    return profile
+
+def main():
+    connect, cursor = create_database()
+
+    user_id = int(input("Enter profile ID: "))
+
+    profile = get_user_profile(cursor, user_id)
+
+    if profile is None:
+        print("No profile found with that ID.")
+    else:
+        name = profile[1]
+        age = profile[4]
+        retirement_age = profile[5]
+        annual_income = profile[8]
+        annual_expenses = profile[9]
+        current_assets = profile[10]
+        risk_tolerance = profile[12]
+        money_by_retirement = profile[13]
+        print("User Summary:")
+        print(f"Name: {name}")
+        print(f"Annual income: ฿{annual_income:,.2f}")
+        print(f"Annual expenses: ฿{annual_expenses:,.2f}")
+        print(f"Current assets: ฿{current_assets:,.2f}")
+        print(f"Risk profile: {risk_algorithm(risk_tolerance)}")
+        print(f"Retirement goal in today's money: ฿{money_by_retirement:,.2f}")
+        inflation_rate = 0.03  # Example inflation rate
+        adjusted_goal = inflation_adjustment(money_by_retirement, age, retirement_age, inflation_rate)
+        monthly_savings_needed, remaining_amount, months_till_retirement = required_monthly_savings(adjusted_goal, current_assets, age, retirement_age)
+        print(f"Inflation-adjusted retirement goal: {adjusted_goal:,.2f}")
+        print(f"Monthly savings needed: {monthly_savings_needed:,.2f}")
+        print(f"Remaining amount: {remaining_amount:,.2f}")
+        print(f"Months until retirement: {months_till_retirement}")
+        progress(annual_income, annual_expenses, monthly_savings_needed)
+
+    connect.close()
+
+if __name__ == "__main__":
+    main()
+
+
