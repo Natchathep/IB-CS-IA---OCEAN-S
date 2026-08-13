@@ -1,0 +1,29 @@
+import requests
+import pandas as pd
+import matplotlib as plt
+
+API_KEY = "9TJ960TKJ0LLT38Z"
+
+def get_stock_data(symbol, api_key):
+    url = "https://www.alphavantage.co/query"
+
+    params = {
+        "function": "OVERVIEW",
+        "symbol": symbol,
+        "apikey": api_key
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    return {
+        "Symbol": symbol,
+        "Company Name": data.get("Name"),
+        "Sector": data.get("Sector"),
+        "Dividend": data.get("DividendYield"),
+        "Growth": data.get("RevenueGrowthTTM"),
+        "Market Cap": data.get("MarketCapitalization"),
+        "P/E Ratio": data.get("PERatio")
+    }
+
+print(get_stock_data('TSLA', API_KEY))
