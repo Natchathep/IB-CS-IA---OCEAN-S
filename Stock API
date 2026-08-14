@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import matplotlib as plt
 
-API_KEY = "9TJ960TKJ0LLT38Z"
+API_KEY = 
 
 def get_stock_data(symbol, api_key):
     url = "https://www.alphavantage.co/query"
