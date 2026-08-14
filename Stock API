@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import matplotlib as plt
+from User_profile import main
 
 API_KEY = 
 
@@ -16,14 +17,126 @@ def get_stock_data(symbol, api_key):
     response = requests.get(url, params=params)
     data = response.json()
 
-    return {
-        "Symbol": symbol,
-        "Company Name": data.get("Name"),
-        "Sector": data.get("Sector"),
-        "Dividend": data.get("DividendYield"),
-        "Growth": data.get("RevenueGrowthTTM"),
-        "Market Cap": data.get("MarketCapitalization"),
-        "P/E Ratio": data.get("PERatio")
+    beta = float(data.get("Beta"))
+    risk = int
+    if beta <0.8:
+        risk = 1
+    elif beta >= 0.8 and beta <= 1.2:
+        risk = 2
+    elif beta > 1.2:
+        risk = 3
+
+    market_capitalization = float(data.get("MarketCapitalization"))
+    market_cap = int
+    if market_capitalization > 10000000000:
+        market_cap = 1
+    elif market_capitalization < 10000000000 and market_capitalization > 2000000000:
+        market_cap = 2
+    elif market_capitalization < 2000000000 and market_capitalization > 250000000:
+        market_cap = 3
+
+    Ticker = symbol
+    Company_Name = data.get("Name")
+    Sector = data.get("Sector")
+    api_Dividend = data.get("DividendYield")
+
+    if api_Dividend == "None" or api_Dividend is None:
+        Dividend = 0.0
+    else:
+        Dividend = float(api_Dividend) * 100
+
+    stock = {
+    "ticker": symbol,
+    "company_name": Company_Name,
+    "sector": Sector,
+    "dividend_yield": Dividend,
+    "market_cap": market_cap,
+    "risk": risk
+}
+    return stock
+
+def get_stock_growth(symbol, api_key):
+    url = "https://www.alphavantage.co/query"
+
+    params = {
+        "function" : "TIME_SERIES_MONTHLY",
+        "symbol" : symbol,
+        "apikey": api_key
+
     }
 
-print(get_stock_data('TSLA', API_KEY))
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    monthly_data = data.get("Monthly Time Series")
+    
+    dates = sorted(monthly_data.keys(), reverse=True)
+
+    current_month = monthly_data.get(dates[0])
+    previous_month = monthly_data.get(dates[1])
+
+    current_price = float(current_month.get("4. adjusted close"))
+    previous_price = float(previous_month.get("4. adjusted close"))
+
+    monthly_growth = (
+    (current_price - previous_price)/ previous_price) * 100
+
+    return monthly_growth
+
+# Matching:
+# Risk = 30%, exact match = 30, one away = 15, no = 0
+# Sector = 10%, exact match = 10, not = 0
+# Dividend = 30%, exact match = 30, -1% = 15, >1 = 0
+# Growth = 20%, exact match = 20, -5% = 10, not = 0 
+# Market Cap = 10%, exact match = 10, one away = 5, no = 0 
+
+risk_tolerance = 1
+interested_sector = "technology"
+interested_dividend = 5
+interested_growth = 20
+interested_marketcap = 1
+def stock_match(risk_tolerance, interested_sector, interested_dividend, interested_growth, monthly_growth, interested_marketcap, stock):
+    match = 0
+    if risk_tolerance == stock["risk"]:
+        match += 30
+    elif risk_tolerance == stock["risk"] + 1 or risk_tolerance == stock["risk"] - 1:
+        match += 15
+    elif risk_tolerance > stock["risk"] + 1 or risk_tolerance < stock["risk"] - 1:
+        match += 0
+
+    if interested_sector == stock["sector"]:
+        match += 10
+    else:
+        match += 0
+    
+    if stock["dividend_yield"] >= interested_dividend:
+        match += 30
+    elif stock["dividend_yield"] - 1 == interested_dividend:
+        match += 15
+    elif stock["dividend_yield"] - 1 > interested_dividend:
+        match += 0 
+
+    if interested_growth >= monthly_growth:
+        match += 20
+    elif interested_growth == monthly_growth - 5:
+        match += 10
+    elif interested_growth < monthly_growth - 5:
+        match += 0
+
+    if interested_marketcap == stock["market_cap"]:
+        match += 10
+    elif stock["market_cap"] - 1 == interested_marketcap:
+        match += 5
+    elif stock["market_cap"] - 1 < interested_marketcap:
+        match += 0
+
+    return match
+
+
+Apple = get_stock_data("AAPL", API_KEY)
+monthly_growth = get_stock_growth("AAPL", API_KEY)
+
+if Apple is not None:
+    score = stock_match(risk_tolerance, interested_sector, interested_dividend, interested_growth, monthly_growth, interested_marketcap, Apple)
+    print(score)
+
