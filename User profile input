@@ -22,7 +22,9 @@ def create_database():
         current_assets INTEGER,
         interested_sectors TEXT,
         risk_tolerance INTEGER,
-        money_by_retirement INTEGER
+        money_by_retirement INTEGER,
+        interested_dividend INTEGER,
+        market_cap_preference INTEGER
     )
     ''')
 
@@ -112,9 +114,9 @@ def user_input():
 
     while True:
         try:
-            risk_tolerance = int(input("input risk tolerance 1-10 "))
-            if risk_tolerance not in range(1, 11):
-                raise ValueError("Invalid risk tolerance value. Please enter a number between 1 and 10.")
+            risk_tolerance = int(input("input risk tolerance 1-3, 1 being low and 3 being high"))
+            if risk_tolerance not in range(1, 4):
+                raise ValueError("Invalid risk tolerance value. Please enter a number between 1 and 3 ")
             break
         except ValueError as e:
             print(f"Invalid input. {e}")
@@ -131,12 +133,29 @@ def user_input():
         except ValueError:
             print("Invalid input. Please enter valid values.")
             return
+
+    while True:
+        try: 
+            interested_dividend = int(input("input your interested percentage of dividend "))
+            break
+        except ValueError:
+                print("Invalid input. Please enter valid values.")
+                return
+
+    while True:
+        try: 
+            market_cap_preference = int(input("input your market cap preference, 1 being large, 2 medium, 3 small: "))
+            break
+        except ValueError:
+            print("Invalid input. Please enter valid values.")
+            return
+        
         
     return (
         name, age, retirement_age, annual_income,
         annual_expenses, current_assets, interested_sectors,
         risk_tolerance, money_by_retirement,
-        spouse_status, parental_status
+        spouse_status, parental_status, interested_dividend, market_cap_preference
     )
 
 def create_user_profile(
@@ -144,21 +163,21 @@ def create_user_profile(
     name, age, retirement_age, annual_income,
     annual_expenses, current_assets, interested_sectors,
     risk_tolerance, money_by_retirement,
-    spouse_status, parental_status
+    spouse_status, parental_status, interested_dividend, market_cap_preference
 ):
     cursor.execute("""
     INSERT INTO user_profile_table (
         name, spouse_status, parental_status, age, retirement_age,
         relationship, main_profile_id,
         annual_income, annual_expenses, current_assets,
-        interested_sectors, risk_tolerance, money_by_retirement
+        interested_sectors, risk_tolerance, money_by_retirement, interested_dividend, market_cap_preference
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, (
     name, spouse_status, parental_status, age, retirement_age,
     relationship, main_profile_id,
     annual_income, annual_expenses, current_assets,
-    interested_sectors, risk_tolerance, money_by_retirement
+    interested_sectors, risk_tolerance, money_by_retirement, interested_dividend, market_cap_preference
 ))
 
     connect.commit()
@@ -172,11 +191,11 @@ def create_user_profile(
 
 # Risk Algo
 def risk_algorithm(risk_tolerance):
-    if risk_tolerance <= 3:
+    if risk_tolerance == 1:
         return "Low Risk"
-    elif 4 <= risk_tolerance <= 7:
+    elif risk_tolerance == 2:
         return "Medium Risk"
-    elif risk_tolerance >= 8:
+    elif risk_tolerance == 3:
         return "High Risk"
 
 # Calulate algo
@@ -244,6 +263,15 @@ def get_user_profile(cursor, user_id):
 def main():
     connect, cursor = create_database()
 
+    '''profile_data = user_input()
+
+    if profile_data is not None:
+        create_user_profile(
+            cursor, connect,
+            "Main User", None,
+            *profile_data
+        )'''
+
     user_id = int(input("Enter profile ID: "))
 
     profile = get_user_profile(cursor, user_id)
@@ -259,14 +287,16 @@ def main():
         current_assets = profile[10]
         risk_tolerance = profile[12]
         money_by_retirement = profile[13]
+        interested_dividend = profile[14]
+        market_cap_preference = profile[15]
         print("User Summary:")
         print(f"Name: {name}")
-        print(f"Annual income: ฿{annual_income:,.2f}")
-        print(f"Annual expenses: ฿{annual_expenses:,.2f}")
-        print(f"Current assets: ฿{current_assets:,.2f}")
+        print(f"Annual income: {annual_income:,.2f}")
+        print(f"Annual expenses: {annual_expenses:,.2f}")
+        print(f"Current assets: {current_assets:,.2f}")
         print(f"Risk profile: {risk_algorithm(risk_tolerance)}")
         print(f"Retirement goal in today's money: ฿{money_by_retirement:,.2f}")
-        inflation_rate = 0.03  # Example inflation rate
+        inflation_rate = 0.03  # test inflation rate
         adjusted_goal = inflation_adjustment(money_by_retirement, age, retirement_age, inflation_rate)
         monthly_savings_needed, remaining_amount, months_till_retirement = required_monthly_savings(adjusted_goal, current_assets, age, retirement_age)
         print(f"Inflation-adjusted retirement goal: {adjusted_goal:,.2f}")
@@ -279,5 +309,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
