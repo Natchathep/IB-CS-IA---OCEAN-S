@@ -11,7 +11,7 @@ profile = get_user_profile(cursor, user_id)
 
 print(profile)
 
-API_KEY = 
+API_KEY = "CB6AA7DJDNZURUXD"
 
 def get_stock_data(symbol, api_key):
     url = "https://www.alphavantage.co/query"
@@ -172,7 +172,8 @@ test_stocks = [
         "sector": "Technology",
         "dividend_yield": 5.0,
         "market_cap": 1,
-        "risk": 1
+        "risk": 1,
+        "growth": 15
     },
     {
         "ticker": "TEST_MID",
@@ -180,7 +181,8 @@ test_stocks = [
         "sector": "Technology",
         "dividend_yield": 4.4,
         "market_cap": 2,
-        "risk": 2
+        "risk": 2,
+        "growth": 8
     },
     {
         "ticker": "TEST_LOW",
@@ -188,7 +190,8 @@ test_stocks = [
         "sector": "Financial Services",
         "dividend_yield": 1.0,
         "market_cap": 3,
-        "risk": 3
+        "risk": 3,
+        "growth": 2
     }
 ]
 
@@ -196,20 +199,32 @@ user_stocks = ["AAPL", "TSLA", "V", "NVDA"]
 
 scored_stocks = []
 
-for ticker in user_stocks:
-    stock = get_stock_data(ticker, API_KEY)
-    if stock is not None:
-        score = stock_match(risk_tolerance, interested_sector, interested_dividend, interested_marketcap, stock)
+for stock in test_stocks:
+#stock = get_stock_data(ticker, API_KEY)
+#if stock is not None:'
+    score = stock_match(risk_tolerance, interested_sector, interested_dividend, interested_marketcap, stock)
     
-        stock["score"] = score
-        scored_stocks.append(stock)
+    stock["score"] = score
+    scored_stocks.append(stock)
 
 ranked_stocks = sorted(scored_stocks, key=lambda stock: stock["score"], reverse=True)
+
+total_percent = 0
+port_allocation = 0
 
 for stock in ranked_stocks:
     print(f"Company Name: {stock["company_name"]}, match% : {stock_match(risk_tolerance, interested_sector, interested_dividend, interested_marketcap, stock)}")
 
     print(recommendation_explanation(risk_tolerance, interested_sector, interested_dividend, interested_marketcap, stock))
+
+    total_percent += stock["score"]
+
+for stock in ranked_stocks:
+    port_allocation = ((stock["score"])/total_percent)*100
+
+    print(f"{stock["company_name"]} % to put in: {port_allocation:.2f}")
+
+
 
 
 
