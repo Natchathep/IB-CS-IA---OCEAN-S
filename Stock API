@@ -11,7 +11,7 @@ profile = get_user_profile(cursor, user_id)
 
 print(profile)
 
-API_KEY = "CB6AA7DJDNZURUXD"
+API_KEY = ""
 
 def get_stock_data(symbol, api_key):
     url = "https://www.alphavantage.co/query"
