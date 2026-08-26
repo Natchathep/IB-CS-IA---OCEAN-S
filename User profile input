@@ -118,11 +118,8 @@ def user_input():
             if risk_tolerance not in range(1, 4):
                 raise ValueError("Invalid risk tolerance value. Please enter a number between 1 and 3 ")
             break
-        except ValueError as e:
-            print(f"Invalid input. {e}")
-            return
-        except ValueError as e:
-            print(f"Invalid input. {e}")
+        except ValueError:
+            print(f"Invalid input. Please enter valid values.")
             return
         
 # Financial Goals
