@@ -24,7 +24,8 @@ def create_database():
         risk_tolerance INTEGER,
         money_by_retirement INTEGER,
         interested_dividend INTEGER,
-        market_cap_preference INTEGER
+        market_cap_preference INTEGER,
+        percentage_disposable_income_investable REAL
     )
     ''')
 
@@ -118,10 +119,23 @@ def user_input():
             if risk_tolerance not in range(1, 4):
                 raise ValueError("Invalid risk tolerance value. Please enter a number between 1 and 3 ")
             break
-        except ValueError:
-            print(f"Invalid input. Please enter valid values.")
+        except ValueError as e:
+            print(f"Invalid input. {e}")
+            return
+        except ValueError as e:
+            print(f"Invalid input. {e}")
             return
         
+    while True:
+        try:
+            percentage_disposable_income_investable = float(input("input percentage of disposable income to invest "))
+            if not (0 <= percentage_disposable_income_investable <= 100):
+                raise ValueError("Invalid percentage. Please enter a value between 0 and 100.")
+            break
+        except ValueError as e:
+            print(f"Invalid input. {e}")
+            return
+
 # Financial Goals
     while True:
         try:
@@ -152,7 +166,7 @@ def user_input():
         name, age, retirement_age, annual_income,
         annual_expenses, current_assets, interested_sectors,
         risk_tolerance, money_by_retirement,
-        spouse_status, parental_status, interested_dividend, market_cap_preference
+        spouse_status, parental_status, interested_dividend, market_cap_preference, percentage_disposable_income_investable
     )
 
 def create_user_profile(
@@ -160,21 +174,21 @@ def create_user_profile(
     name, age, retirement_age, annual_income,
     annual_expenses, current_assets, interested_sectors,
     risk_tolerance, money_by_retirement,
-    spouse_status, parental_status, interested_dividend, market_cap_preference
+    spouse_status, parental_status, interested_dividend, market_cap_preference, percentage_disposable_income_investable
 ):
     cursor.execute("""
     INSERT INTO user_profile_table (
         name, spouse_status, parental_status, age, retirement_age,
         relationship, main_profile_id,
         annual_income, annual_expenses, current_assets,
-        interested_sectors, risk_tolerance, money_by_retirement, interested_dividend, market_cap_preference
+        interested_sectors, risk_tolerance, money_by_retirement, interested_dividend, market_cap_preference, percentage_disposable_income_investable
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, (
     name, spouse_status, parental_status, age, retirement_age,
     relationship, main_profile_id,
     annual_income, annual_expenses, current_assets,
-    interested_sectors, risk_tolerance, money_by_retirement, interested_dividend, market_cap_preference
+    interested_sectors, risk_tolerance, money_by_retirement, interested_dividend, market_cap_preference, percentage_disposable_income_investable
 ))
 
     connect.commit()
@@ -184,7 +198,6 @@ def create_user_profile(
 
     for profile in profiles:
         print(profile)
-
 
 # Risk Algo
 def risk_algorithm(risk_tolerance):
@@ -257,17 +270,98 @@ def get_user_profile(cursor, user_id):
     profile = cursor.fetchone()
     return profile
 
+def get_linked_profiles(cursor, main_profile_id):
+    cursor.execute(
+        "SELECT * FROM user_profile_table WHERE main_profile_id = ?",
+        (main_profile_id,)
+    )
+    return cursor.fetchall()
+
+def add_linked_profile(cursor, connect, main_profile_id):
+    main_profile = get_user_profile(cursor, main_profile_id)
+
+    if main_profile is None:
+        print("main profile not found.")
+        return
+
+    relationship = input(
+        "Enter relationship: spouse, child, or family: "
+    ).lower()
+
+    valid_relationships = ["spouse", "child", "family"]
+
+    if relationship not in valid_relationships:
+        print("Relationship is invalid.")
+        return
+
+    profile_data = user_input()
+
+    if profile_data is None:
+        return
+
+    create_user_profile(
+        cursor,
+        connect,
+        relationship,
+        main_profile_id,
+        *profile_data
+    )
+
+    print("linked profile created")
+
+def create_household_profile(main_profile, linked_profiles):
+    main_risk = main_profile[12]
+    household_income = main_profile[8]
+    household_expenses = main_profile[9]
+    household_assets = main_profile[10]
+    members = 1
+
+    if linked_profiles:
+        linked_risk_total = sum(linked_profile[12] for linked_profile in linked_profiles)
+        linked_risk_average = linked_risk_total / len(linked_profiles)
+        household_risk = round((main_risk * 0.7) + (linked_risk_average * 0.3))
+    else:
+        household_risk = main_risk
+
+    for linked_profile in linked_profiles:
+        household_income += linked_profile[8]
+        household_expenses += linked_profile[9]
+        household_assets += linked_profile[10]
+        members += 1    
+
+    return {
+        "members": members,
+        "annual_income": household_income,
+        "annual_expenses": household_expenses,
+        "current_assets": household_assets,
+        "age": main_profile[4],
+        "retirement_age": main_profile[5],
+        "interested_sector": main_profile[11],
+        "risk_tolerance": household_risk,
+        "money_by_retirement": main_profile[13],
+        "interested_dividend": main_profile[14],
+        "market_cap_preference": main_profile[15],
+        "percentage_disposable_income_investable": main_profile[16]
+    }
+
 def main():
     connect, cursor = create_database()
 
-    '''profile_data = user_input()
+    create_new = input(
+        "Do you want to create a new main profile? yes or no: "
+    ).lower()
 
-    if profile_data is not None:
-        create_user_profile(
-            cursor, connect,
-            "Main User", None,
-            *profile_data
-        )'''
+    if create_new == "yes":
+        profile_data = user_input()
+
+        if profile_data is not None:
+            create_user_profile(
+                cursor,
+                connect,
+                "Main User",
+                None,
+                *profile_data
+            )
 
     user_id = int(input("Enter profile ID: "))
 
@@ -276,6 +370,16 @@ def main():
     if profile is None:
         print("No profile found with that ID.")
     else:
+        add_linked = input("Do you want to add a linked profile? yes or no: ")
+
+        if add_linked == "yes":
+            add_linked_profile(cursor, connect, user_id)
+        
+        linked_profiles = get_linked_profiles(cursor, user_id)
+        household_profile = create_household_profile(profile, linked_profiles)
+
+        print("Household profile:", household_profile)
+
         name = profile[1]
         age = profile[4]
         retirement_age = profile[5]
@@ -286,7 +390,7 @@ def main():
         money_by_retirement = profile[13]
         interested_dividend = profile[14]
         market_cap_preference = profile[15]
-        print("User Summary:")
+        print("Main User Summary:")
         print(f"Name: {name}")
         print(f"Annual income: {annual_income:,.2f}")
         print(f"Annual expenses: {annual_expenses:,.2f}")
@@ -301,6 +405,13 @@ def main():
         print(f"Remaining amount: {remaining_amount:,.2f}")
         print(f"Months until retirement: {months_till_retirement}")
         progress(annual_income, annual_expenses, monthly_savings_needed)
+
+        print("Household Summary:")
+        print(f"Members: {household_profile['members']}")
+        print(f"Combined annual income: "f"฿{household_profile['annual_income']:,.2f}")
+        print(f"Combined annual expenses: "f"฿{household_profile['annual_expenses']:,.2f}")
+        print(f"Combined assets: "f"฿{household_profile['current_assets']:,.2f}")
+        print(f"Household risk: "f"{risk_algorithm(household_profile['risk_tolerance'])}")
 
     connect.close()
 
